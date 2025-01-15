@@ -2,6 +2,7 @@ package notes
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 )
 
@@ -25,13 +26,18 @@ func (r *Repo) CreateNewNote(title, body, userId string) error {
 // GetAllNotes - получение всех заметок пользователя
 func (r *Repo) GetAllNotes(userId string, id int) ([]Note, error) {
 	query := `SELECT title, body FROM note WHERE user_id = $1`
-	if id == 0 {
+	args := []any{userId}
+
+	if id != 0 {
 		query += ` AND id = $2`
+		args = append(args, id)
 	}
-	rows, err := r.db.Query(query, userId, id)
+
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var notes []Note
 	for rows.Next() {
@@ -41,6 +47,11 @@ func (r *Repo) GetAllNotes(userId string, id int) ([]Note, error) {
 			return nil, err
 		}
 		notes = append(notes, note)
+		fmt.Println(notes)
+	}
+
+	if len(notes) == 0 {
+		return nil, fmt.Errorf("нет заметок")
 	}
 
 	return notes, nil

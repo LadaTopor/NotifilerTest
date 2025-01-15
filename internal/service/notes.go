@@ -49,13 +49,13 @@ func (s *Service) CreateNote(c echo.Context, userId string) error {
 // GetNotes - все запросы
 func (s *Service) GetNotes(c echo.Context, userId string) error {
 	repo := s.notesRepo
-	words, err := repo.GetAllNotes(userId, 0)
+	notes, err := repo.GetAllNotes(userId, 0)
 	if err != nil {
 		s.logger.Error(err)
 		return c.JSON(s.NewError(InternalServerError))
 	}
 
-	return c.JSON(http.StatusOK, words)
+	return c.JSON(http.StatusOK, notes)
 }
 
 // GetNoteById - Достать заметку по id
@@ -67,13 +67,13 @@ func (s *Service) GetNoteById(c echo.Context, userId string) error {
 	}
 
 	repo := s.notesRepo
-	words, err := repo.GetAllNotes(userId, id)
+	note, err := repo.GetAllNotes(userId, id)
 	if err != nil {
 		s.logger.Error(err)
 		return c.JSON(s.NewError(InternalServerError))
 	}
 
-	return c.JSON(http.StatusOK, words)
+	return c.JSON(http.StatusOK, note[0])
 }
 
 // DeleteNoteById - удаление заметки

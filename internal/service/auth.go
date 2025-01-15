@@ -2,7 +2,6 @@ package service
 
 import (
 	"Notes/pkg/jwt_token"
-	"fmt"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
@@ -14,13 +13,13 @@ const secretKey = "khetag_pig"
 
 // CreateUser - регистрация пользователя
 func (s *Service) CreateUser(c echo.Context) error {
-	newUser := new(RegisterUser)
+	newUser := new(User)
 	if err := c.Bind(newUser); err != nil {
 		s.logger.Error(err)
 		return c.JSON(http.StatusBadRequest, "Некорректные данные")
 	}
 
-	if newUser.Name == "" || newUser.Password == "" || newUser.Email == "" {
+	if len(newUser.Name) == 0 || len(newUser.Password) == 0 || len(newUser.Email) == 0 {
 		return c.JSON(http.StatusBadRequest, "Все поля обязательны для заполнения")
 	}
 
@@ -32,14 +31,13 @@ func (s *Service) CreateUser(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "Ошибка при обработке пароля")
 	}
 
-	fmt.Println(id, "ИД пользователя")
 	token, err := jwt_token.CreateToken(id, newUser.Name, secretKey)
 	if err != nil {
 		s.logger.Error(err)
 		return c.JSON(http.StatusBadRequest, "Некорректные данные")
 	}
 
-	repo := s.registerUserRepo
+	repo := s.UserRepo
 	err = repo.CreateNewUser(id, newUser.Name, newUser.Email, string(hashedPassword), token)
 	if err != nil {
 		s.logger.Error("Ошибка сохранения пользователя:", err)
@@ -51,7 +49,7 @@ func (s *Service) CreateUser(c echo.Context) error {
 
 // AuthUser - авторизация пользователя
 func (s *Service) AuthUser(c echo.Context) error {
-	user := new(AuthUser)
+	user := new(User)
 	if err := c.Bind(user); err != nil {
 		s.logger.Error(err)
 		return c.JSON(http.StatusBadRequest, "Некорректные данные")
@@ -63,7 +61,7 @@ func (s *Service) AuthUser(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "Ошибка при обработке пароля")
 	}
 
-	repo := s.registerUserRepo
+	repo := s.UserRepo
 	err = repo.VerifyingUserData(user.Email, string(hashedPassword))
 	if err != nil {
 		s.logger.Error("Ошибка введённых данных:", err)
@@ -76,15 +74,12 @@ func (s *Service) AuthUser(c echo.Context) error {
 func (s *Service) CheckAuth(apiFunc func(c echo.Context, userId string) error) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		token := c.Request().Header.Get("Authorization")
-		fmt.Println(token)
 		if len(token) == 0 {
 			return c.JSON(http.StatusBadRequest, "Отсутствует токен")
 		}
 
 		jwt, err := jwt_token.DecodeJWT(token, []byte(secretKey))
-		fmt.Println(jwt["sub"])
 		if err != nil {
-			fmt.Println(err)
 			return c.JSON(http.StatusInternalServerError, "Не удалось декодировать токен")
 		}
 
