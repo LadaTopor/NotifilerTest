@@ -47,7 +47,6 @@ func (r *Repo) GetAllNotes(userId string, id int) ([]Note, error) {
 			return nil, err
 		}
 		notes = append(notes, note)
-		fmt.Println(notes)
 	}
 
 	if len(notes) == 0 {
